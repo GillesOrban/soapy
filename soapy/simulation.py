@@ -195,84 +195,122 @@ class Sim(object):
                 wfsClass = getattr(wfs, self.config.wfss[nwfs].type)
             except AttributeError:
                 raise confParse.ConfigurationError(
-                        "No WFS of type {} found.".format(
-                                self.config.wfss[nwfs].type))
+                    "No WFS of type {} found.".format(
+                        self.config.wfss[nwfs].type))
 
             self.wfss[nwfs] = wfsClass(
-                    self.config, n_wfs=nwfs, mask=self.mask)
+                self.config, n_wfs=nwfs, mask=self.mask)
 
             self.config.wfss[nwfs].dataStart = self.config.sim.totalWfsData
             self.config.sim.totalWfsData += self.wfss[nwfs].n_measurements
 
             logger.info("WFS {0}: {1} measurements".format(nwfs,
-                     self.wfss[nwfs].n_measurements))
+                                                           self.wfss[nwfs].n_measurements))
 
         # Init DMs
         logger.info("Initialising {0} DMs...".format(self.config.sim.nDM))
         self.dms = {}
         self.dmActCommands = {}
         self.config.sim.totalActs = 0
-        self.dmShape = numpy.zeros([self.config.sim.simSize]*2)
+        self.dmShape = numpy.zeros([self.config.sim.simSize] * 2)
         self.dmAct1 = []
         for dm in xrange(self.config.sim.nDM):
             self.dmAct1.append(self.config.sim.totalActs)
             try:
                 dmObj = getattr(DM, self.config.dms[dm].type)
             except AttributeError:
-                raise confParse.ConfigurationError("No DM of type {} found".format(self.config.dms[dm].type))
+                raise confParse.ConfigurationError(
+                    "No DM of type {} found".format(self.config.dms[dm].type))
 
             self.dms[dm] = dmObj(
-                    self.config, n_dm=dm, wfss=self.wfss,
-                    mask=self.mask
-                    )
+                self.config, n_dm=dm, wfss=self.wfss,
+                mask=self.mask
+            )
 
             self.dmActCommands[dm] = numpy.empty(
-                    (self.config.sim.nIters, self.dms[dm].n_acts))
+                (self.config.sim.nIters, self.dms[dm].n_acts))
 
             self.dmAct1.append(self.config.sim.totalActs)
             self.config.sim.totalActs += self.dms[dm].n_acts
 
-            logger.info("DM %d: %d active actuators"%(dm,self.dms[dm].n_acts))
-        logger.info("%d total DM Actuators"%self.config.sim.totalActs)
-
+            logger.info("DM %d: %d active actuators" % (dm, self.dms[dm].n_acts))
+        logger.info("%d total DM Actuators" % self.config.sim.totalActs)
 
         # Init Reconstructor
         logger.info("Initialising Reconstructor...")
         try:
             reconObj = getattr(reconstruction, self.config.recon.type)
         except AttributeError:
-            raise confParse.ConfigurationError("No reconstructor of type {} found.".format(self.config.recon.type))
+            raise confParse.ConfigurationError(
+                "No reconstructor of type {} found.".format(self.config.recon.type))
         self.recon = reconObj(
-                self.config, self.dms, self.wfss, self.atmos,
-                self.runWfs
-                )
+            self.config, self.dms, self.wfss, self.atmos,
+            self.runWfs
+        )
 
         # Init Science Cameras
         logger.info("Initialising {0} Science Cams...".format(self.config.sim.nSci))
         self.sciCams = {}
         self.sciImgs = {}
-        self.sciImgNo=0
+        self.sciImgNo = 0
         for nSci in xrange(self.config.sim.nSci):
             try:
                 sciObj = getattr(SCI, self.config.scis[nSci].type)
             except AttributeError:
-                raise confParse.ConfigurationError("No science camera of type {} found".format(self.config.scis[nSci].type))
+                raise confParse.ConfigurationError(
+                    "No science camera of type {} found".format(self.config.scis[nSci].type))
             self.sciCams[nSci] = sciObj(
-                        self.config, nSci=nSci, mask=self.mask
-                        )
+                self.config, nSci=nSci, mask=self.mask
+            )
 
-            self.sciImgs[nSci] = numpy.zeros( [self.config.scis[nSci].pxls]*2 )
+            self.sciImgs[nSci] = numpy.zeros([self.config.scis[nSci].pxls] * 2)
+
+        # Generate tip tilt vibration time series
+        xy = numpy.indices((self.config.sim.scrnSize, self.config.sim.scrnSize))
+        # DM shape is in nanometer
+        tt_factor = 4.848e-6 * self.config.tel.telDiam /\
+            self.config.sim.pupilSize * 1e9
+        self.tiptilt_norm = xy * tt_factor
+        # tip_time_serie = None
+        # tilt_time_serie = None
+        self.tip_time_serie =\
+            vib.generate_vibration_time_series(self.config.sim.loopTime,
+                                               self.config.sim.nIters,
+                                               self.config.tel.tip_white_rms,
+                                               0,
+                                               self.config.tel.tip_peaks,
+                                               self.config.tel.tip_peak_rms,
+                                               self.config.tel.tip_peak_width)
+        self.tilt_time_serie =\
+            vib.generate_vibration_time_series(self.config.sim.loopTime,
+                                               self.config.sim.nIters,
+                                               self.config.tel.tilt_white_rms,
+                                               0,
+                                               self.config.tel.tilt_peaks,
+                                               self.config.tel.tilt_peak_rms,
+                                               self.config.tel.tilt_peak_width)
+        # Define on which DM the vibration will be injected
+        dmTypes = []
+        for dm in xrange(self.config.sim.nDM):
+            dmTypes.append(self.dms[dm].dmConfig.type)
+        dmTypes = numpy.array(dmTypes)
+        ttDMIdx = numpy.argwhere(dmTypes == 'TT')
+        if ttDMIdx.size:
+            self.vib_dm_index = numpy.unique(ttDMIdx)[0]
+        else:
+            # if no tip-tilt mirror, vibration are put on first DM
+            self.vib_dm_index = 0
 
         # Init data storage
         logger.info("Initialise Data Storage...")
         self.initSaveData()
 
         # Init simulation
-        #Circular buffers to hold loop iteration correction data
+        # Circular buffers to hold loop iteration correction data
         self.slopes = numpy.zeros((self.config.sim.totalWfsData))
         self.closed_correction = numpy.zeros((
-                self.config.sim.nDM, self.config.sim.scrnSize, self.config.sim.scrnSize
-                ))
+            self.config.sim.nDM, self.config.sim.scrnSize, self.config.sim.scrnSize
+        ))
         self.open_correction = self.closed_correction.copy()
         self.dmCommands = numpy.zeros(self.config.sim.totalActs)
         self.buffer = DelayBuffer()
@@ -533,7 +571,16 @@ class Sim(object):
 
         # Get dmShape from closed loop DMs
         self.closed_correction = self.runDM(
-                self.dmCommands, closed=True)
+            self.dmCommands, closed=True)
+
+        # Add vibrations here - so this is "closed-loop", ie seen by the WFS
+        # Find index for tip-tilt mirror or take idx=0 (see aoinit)
+        self.closed_correction[self.vib_dm_index, :,
+                               :] += self.tip_time_serie[self.iters] *\
+            self.tiptilt_norm[0, :, :]
+        self.closed_correction[self.vib_dm_index, :,
+                               :] += self.tilt_time_serie[self.iters] *\
+            self.tiptilt_norm[1, :, :]
 
         # Run WFS, with closed loop DM shape applied
         self.slopes = self.runWfs(dmShape=self.closed_correction,

@@ -815,18 +815,33 @@ class TelConfig(ConfigObj):
                             obscuration                         ``0``
         ``mask``            str: Shape of pupil (only
                             accepts ``circle`` currently)       ``circle``
+        ``tip_white_rms``
+        ``tip_peaks``       tuple: Hz
+        ``tip_peak_rms``    tuple: arcsec
+        ``tip_peak_width``                                       ``None``
+        ``tilt_white_rms``
+        ``tilt_peaks``      tuple: Hz
+        ``tilt_peaks_rms``  tuple: arcsec
+        ``tilt_peak_width``                                     ``None``
         ==================  =================================   ===========
 
     """
 
+    requiredParams = ["telDiam",
+                      ]
 
-    requiredParams = [ "telDiam",
-                            ]
-
-    optionalParams = [ ("obsDiam", 0),
-                        ("mask", "circle")
-                        ]
-    calculatedParams = [  ]
+    optionalParams = [("obsDiam", 0),
+                      ("mask", "circle"),
+                      ('tip_white_rms', 0),
+                      ('tip_peaks', [0]),
+                      ('tip_peak_rms', [0]),
+                      ('tip_peak_width', None),
+                      ('tilt_white_rms', 0),
+                      ('tilt_peaks', [0]),
+                      ('tilt_peak_rms', [0]),
+                      ('tilt_peak_width', None),
+                      ]
+    calculatedParams = []
 
     allowedAttrs = copy.copy(requiredParams + calculatedParams + CONFIG_ATTRIBUTES)
     for p in optionalParams:
