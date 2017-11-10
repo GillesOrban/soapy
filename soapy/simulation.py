@@ -80,8 +80,9 @@ except ImportError:
 
 import aotools
 
-#sim imports
+# sim imports
 from . import atmosphere, logger, wfs, DM, reconstruction, SCI, confParse, interp
+from . import vibration_toto as vib
 
 import shutil
 
