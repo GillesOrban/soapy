@@ -9,12 +9,12 @@ def psd2timeSerie(psdall, fixedPhase=None):
     '''
     # convert PSD to time serie
     # psdtot = np.array([psdall, psdall[2::-1]])[::-1]
-    psdtot = np.concatenate((psdall[::-1], psdall[1:]))
-    # psdtot = psdall
+    # psdtot = np.concatenate((psdall[::-1], psdall[1:]))
+    psdtot = psdall
     # norm = np.sum(psdtot)
 
     # amp = np.sqrt(psdtot * 2)   # %2 because the psd has been doubled by adding negative values
-    amp = np.sqrt(psdtot)
+    amp = np.sqrt(psdtot * 2)
     # random phase between [0, 2pi]
     #  if fixedPhase is None:
     phase = np.random.random(len(amp)) * 2 * np.pi
@@ -64,8 +64,10 @@ def generatePSD(samplingTime, length,
     '''
 
     # 1. Generate the PSD
-    nbOfPt = int(length / 2 + 1)
-    freq = np.linspace(0, 1 / samplingTime / 2, nbOfPt)
+    # nbOfPt = int(length / 2 + 1)
+    # freq = np.linspace(0, 1 / samplingTime / 2, nbOfPt)
+    nbOfPt = int(length)
+    freq = np.linspace(0, 1 / samplingTime, nbOfPt)
     psdall = np.zeros(nbOfPt)
 
     # white noise
