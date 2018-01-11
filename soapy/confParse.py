@@ -523,7 +523,7 @@ class SimConfig(ConfigObj):
                             ("nDM", 0),
                             ("nSci", 0),
                             ("gain", 0.6),
-                            ("reconstructor", "MVM"),
+                            #("reconstructor", "MVM"),
                             ("simName", None),
                             ("saveSlopes", False),
                             ("saveDmCommands", False),

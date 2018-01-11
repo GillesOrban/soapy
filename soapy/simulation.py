@@ -355,7 +355,7 @@ class Sim(object):
             ndarray: The slope data return from the WFS frame (may not be actual slopes if WFS other than SH used)
             """
         t_wfs = time.time()
-        if scrns != None:
+        if scrns is not None:
             self.scrns=scrns
 
         if wfsList==None:

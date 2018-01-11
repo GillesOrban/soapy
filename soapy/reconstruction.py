@@ -891,7 +891,7 @@ class LgsTT(LearnAndApply):
         logger.info("Done. Creating Tomographic Reconstructor...")
 
         if progressCallback!=None:
-            progressCallback(1,1, "Calculating Covariance Matrices")
+            progressCallback("Calculating Covariance Matrices", 1, 1)
 
         #Need to remove all *common* TT from off-axis learn slopes
         self.learnSlopes[:, 2*self.wfss[1].activeSubaps:] = self.removeCommonTT(
@@ -1009,3 +1009,185 @@ class ANN(Reconstructor):
 
         self.Trecon += time.time()-t
         return dmCommands
+
+
+# --- Experimetal LGS tip-tilt recovery with 1 LGS ---#
+class LgsTT_gox(MVM_SeparateDMs):
+    """
+    Reconstructor of LGS TT prediction algorithm.
+
+    Uses one TT DM and a high order DM. The TT WFS controls the TT DM and
+    the second WFS controls the high order DM. The TT WFS and DM are
+    assumed to be the first in the system.
+    """
+
+    # def initControlMatrix(self):
+    #
+    #     self.controlShape = (2*self.wfss[0].n_subaps +
+    #                          2*self.wfss[1].n_subaps,
+    #                          self.sim_config.totalActs)
+    #     self.controlMatrix = numpy.zeros(self.controlShape)
+
+    def learn(self, callback=None, progressCallback=None):
+        '''
+        Takes "self.learnFrames" WFS frames, and computes the tomographic
+        reconstructor for the system. This method uses the "truth" sensor, and
+        assumes that this is WFS0
+        '''
+
+        self.learnSlopes = numpy.zeros((self.learnIters,
+                                        self.sim_config.totalWfsData))
+        for i in xrange(self.learnIters):
+            self.learnIter = i
+
+            scrns = self.moveScrns()
+            self.learnSlopes[i] = self.runWfs(scrns)
+
+            logger.statusMessage(i+1, self.learnIters, "Performing Learn")
+            if callback is not None:
+                callback()
+            if progressCallback is not None:
+                progressCallback("Performing Learn", i, self.learnIters)
+
+        if self.sim_config.saveLearn:
+            # FITS.Write(self.learnSlopes,self.sim_config.simName+"/learn.fits")
+            fits.writeto(
+                    self.sim_config.simName+"/learn.fits",
+                    self.learnSlopes, header=self.sim_config.saveHeader,
+                    overwrite=True)
+
+    def saveCMat(self):
+        cMatFilename = self.sim_config.simName+"/cMat.fits"
+        lgsTTMatFilename = self.sim_config.simName+"/lgsTTMat.fits"
+
+        fits.writeto(
+                cMatFilename, self.control_matrix,
+                header=self.sim_config.saveHeader, overwrite=True
+                )
+
+        fits.writeto(
+                lgsTTMatFilename, self.lgsTTRecon,
+                header=self.sim_config.saveHeader, overwrite=True
+                )
+
+    def calcCMat(self, callback=None, progressCallback=None):
+        '''
+        Uses the slopes recorded in the "learn" and DM interaction matrices
+        to create a CMat.
+        '''
+        # 1. Creating the LGS TT reconstructor
+        logger.info("Performing Learn....")
+        self.learn(callback, progressCallback)
+
+        logger.info("Done. Creating LGS TT Reconstructor...")
+
+        if progressCallback is not None:
+            progressCallback("Calculating Covariance Matrices", 1, 1)
+
+        self.covMat = numpy.cov(self.learnSlopes.T)
+        Conoff = self.covMat[:2*self.wfss[0].n_subaps,
+                             2*self.wfss[0].n_subaps:]
+        Coffoff = self.covMat[2*self.wfss[0].n_subaps:,
+                              2*self.wfss[0].n_subaps:]
+
+        logger.info("Inverting offoff Covariance Matrix")
+        iCoffoff = numpy.linalg.pinv(Coffoff)
+
+        self.lgsTTRecon = Conoff.dot(iCoffoff)
+        logger.info("Done. \nCreating full reconstructor....")
+
+        # 2. Creating the classic control matrix
+        MVM_SeparateDMs.calcCMat(self, callback, progressCallback)
+
+    def reconstruct(self, slopes):
+        """
+        Determine DM commands using previously made
+        reconstructor from slopes.
+        Args:
+            slopes (ndarray): array of slopes to reconstruct  from
+        Returns:
+            ndarray: array of commands to be sent to DM
+        """
+
+        # Normal LGS slopes measurements
+        slopes_HO = slopes[2*self.wfss[0].n_subaps:]
+        # Reconstruction of tip-tilt from LGS slopes
+        slopes_TT = self.lgsTTRecon.dot(slopes_HO)
+
+        assert self.dms[0].dmConfig.type == "TT"
+        # assert self.dms[0].dmConfig.closed == False
+
+        # Remove LGS tip-tilt
+        slopes_HO[:self.wfss[1].n_subaps] -= slopes_HO[:self.wfss[1].n_subaps].mean()
+        slopes_HO[self.wfss[1].n_subaps:] -= slopes_HO[self.wfss[1].n_subaps:].mean()
+
+        # logger.info('LGS TT gox...' + str(slopes_TT.shape))
+        ttCommands = self.control_matrix[:2, :2].T.dot(slopes_TT)
+        hoCommands = self.control_matrix[2:, 2:].T.dot(slopes_HO)
+
+        # return numpy.append(ttCommands, hoCommands)
+
+        # Copy-paste from Base class...
+        t = time.time()
+
+        if self.actuator_values is None:
+            self.actuator_values = numpy.zeros((self.sim_config.totalActs))
+
+        # self.new_actuator_values = numpy.append(ttCommands, hoCommands)
+        # self.apply_gain()
+        dmtt = self.dms[0]
+        dmho = self.dms[1]
+        # Tip-tilt is in (pseudo-)open loop
+        self.actuator_values[0:2] += dmtt.dmConfig.gain * ttCommands
+        # High-order are in closed-loop
+        self.actuator_values[2:] += dmho.dmConfig.gain * hoCommands
+
+
+        self.Trecon += time.time()-t
+        return self.actuator_values
+
+
+
+
+        # if self.dms[0].dmConfig.type == "TT":
+        #     ttMean = slopes.reshape(2, self.wfss[0].n_subaps).mean(1)
+        #     ttCommands = self.controlMatrix[:, :2].T.dot(slopes)
+        #     slopes[:self.wfss[0].n_subaps] -= ttMean[0]
+        #     slopes[self.wfss[0].n_subaps:] -= ttMean[1]
+        #
+        #     #get dm commands for the calculated on axis slopes
+        #     dmCommands = self.controlMatrix[:,2:].T.dot(slopes)
+        #
+        #     return numpy.append(ttCommands, dmCommands)
+        #
+        # #get dm commands for the calculated on axis slopes
+        # dmCommands = super(LearnAndApply, self).reconstruct(slopes)
+        # #dmCommands = self.controlMatrix.T.dot(slopes)
+        # return dmCommands
+
+
+
+    # def removeCommonTT(self, slopes, wfsList):
+    #
+    #     xSlopesShape = numpy.array(slopes.shape)
+    #     xSlopesShape[-1] /= 2.
+    #     xSlopes = numpy.zeros(xSlopesShape)
+    #     ySlopes = numpy.zeros(xSlopesShape)
+    #
+    #     for i in range(len(wfsList)):
+    #         wfs = wfsList[i]
+    #         wfsSubaps = self.wfss[wfs].activeSubaps
+    #         xSlopes[..., i*wfsSubaps:(i+1)*wfsSubaps] = slopes[..., i*2*wfsSubaps:i*2*wfsSubaps+wfsSubaps]
+    #         ySlopes[..., i*wfsSubaps:(i+1)*wfsSubaps] = slopes[..., i*2*wfsSubaps+wfsSubaps:i*2*wfsSubaps+2*wfsSubaps]
+    #
+    #     xSlopes = (xSlopes.T - xSlopes.mean(-1)).T
+    #     ySlopes = (ySlopes.T - ySlopes.mean(-1)).T
+    #
+    #     for i in range(len(wfsList)):
+    #         wfs = wfsList[i]
+    #         wfsSubaps = self.wfss[wfs].activeSubaps
+    #
+    #         slopes[..., i*2*wfsSubaps:i*2*wfsSubaps+wfsSubaps] = xSlopes[..., i*wfsSubaps:(i+1)*wfsSubaps]
+    #         slopes[..., i*2*wfsSubaps+wfsSubaps:i*2*wfsSubaps+2*wfsSubaps] = ySlopes[..., i*wfsSubaps:(i+1)*wfsSubaps]
+    #
+    #     return slopes
