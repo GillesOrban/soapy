@@ -1085,10 +1085,11 @@ class LgsTT_gox(MVM_SeparateDMs):
             progressCallback("Calculating Covariance Matrices", 1, 1)
 
         self.covMat = numpy.cov(self.learnSlopes.T)
-        Conoff = self.covMat[:2*self.wfss[0].n_subaps,
-                             2*self.wfss[0].n_subaps:]
-        Coffoff = self.covMat[2*self.wfss[0].n_subaps:,
-                              2*self.wfss[0].n_subaps:]
+        start_HO = self.wfss[1].config.dataStart
+        Conoff = self.covMat[:start_HO,
+                             start_HO:start_HO + self.wfss[1].n_measurements]
+        Coffoff = self.covMat[start_HO:start_HO + self.wfss[1].n_measurements,
+                              start_HO:start_HO + self.wfss[1].n_measurements]
 
         logger.info("Inverting offoff Covariance Matrix")
         iCoffoff = numpy.linalg.pinv(Coffoff)
@@ -1098,6 +1099,11 @@ class LgsTT_gox(MVM_SeparateDMs):
 
         # 2. Creating the classic control matrix
         MVM_SeparateDMs.calcCMat(self, callback, progressCallback)
+
+        # 3. Slice control matrix to only the first two wfs
+        self.control_matrix = self.control_matrix[:start_HO +
+                                                  self.wfss[1].n_measurements,
+                                                  :]
 
     def reconstruct(self, slopes):
         """
@@ -1110,7 +1116,10 @@ class LgsTT_gox(MVM_SeparateDMs):
         """
 
         # Normal LGS slopes measurements
-        slopes_HO = slopes[2*self.wfss[0].n_subaps:]
+        # slopes_HO = slopes[2*self.wfss[0].n_subaps:]
+        start_HO = self.wfss[1].config.dataStart
+        slopes_HO = slopes[start_HO: start_HO + self.wfss[1].n_measurements]
+
         # Reconstruction of tip-tilt from LGS slopes
         slopes_TT = self.lgsTTRecon.dot(slopes_HO)
 
