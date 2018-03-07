@@ -292,8 +292,13 @@ class Reconstructor(object):
                     wfs_rnoise = wfs.config.eReadNoise
                     wfs.config.eReadNoise = 0
 
+<<<<<<< e8f3b5c2198fe69a1b1c56df279e6937e9995cc1
                 iMat[i, n_wfs_measurments: n_wfs_measurments+wfs.n_measurements] = (
                         -1 * wfs.frame(None, phase_correction=phase, iMatFrame=True))# / dm.dmConfig.iMatValue
+=======
+                iMat[i, n_wfs_measurments: n_wfs_measurments + wfs.n_measurements] = (
+                    -1 * wfs.frame(None, phase_correction=phase, iMatFrame=True))  # / dm.dmConfig.iMatValue
+>>>>>>> set keyword iMatFrame to True for the WFS slopes acquisition.
                 n_wfs_measurments += wfs.n_measurements
 
                 # Turn noise back on again if it was turned off
