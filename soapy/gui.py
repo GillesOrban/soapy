@@ -57,6 +57,10 @@ elif PYQT_VERSION == 4:
 
 from matplotlib.figure import Figure
 import matplotlib.pyplot as pyplot
+<<<<<<< 7ffa5360105b4365db9ef22f4db5a540528a5cc4
+=======
+
+>>>>>>> cleanup import to ipython console
 from . import pyqtgraph
 
 # Change pyqtgraph colourmaps to more usual ones
@@ -757,17 +761,20 @@ class IPythonConsole:
                             "plt" : pyplot}
 =======
         # Pass some useful objects to the user
-        import matplotlib.pyplot as plt
-        import numpy as np
         usefulObjects = {"sim": sim,
                          "gui": gui,
                          "config": config,
                          "simConfig": sim.config.sim,
                          "telConfig": sim.config.tel,
                          "atmosConfig": sim.config.atmos,
+<<<<<<< 7ffa5360105b4365db9ef22f4db5a540528a5cc4
                          "np": np,
                          "plt": plt}
 >>>>>>> numpy and pyplot in interactive console/gui
+=======
+                         "np": numpy,
+                         "plt": pyplot}
+>>>>>>> cleanup import to ipython console
 
         for i in range(sim.config.sim.nGS):
             usefulObjects["wfs{}Config".format(i)] = sim.config.wfss[i]
