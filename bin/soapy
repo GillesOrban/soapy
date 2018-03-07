@@ -5,8 +5,14 @@ either starts a command line or gui version of the simulation.
 '''
 import sys
 import os
+<<<<<<< be95e32a7188251a4b64e67c0ac9a6a37019a1c7
 import matplotlib.pyplot as plt
 import numpy as np
+=======
+import numpy as np
+import matplotlib.pyplot as plt
+
+>>>>>>> numpy and pyplot in interactive console/gui
 
 if sys.platform == "win32":
     # hack to stop the interpretter craching on ctrl-c events when scipy imported.

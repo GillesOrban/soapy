@@ -745,6 +745,7 @@ class IPythonConsole:
         self.kernel.shell.write("Welcome to AO Sim!")
 
         config = sim.config
+<<<<<<< be95e32a7188251a4b64e67c0ac9a6a37019a1c7
         #Pass some useful objects to the user
         usefulObjects = {    "sim" : sim,
                             "gui" : gui,
@@ -754,6 +755,19 @@ class IPythonConsole:
                             "atmosConfig" : sim.config.atmos,
                             "np" : numpy,
                             "plt" : pyplot}
+=======
+        # Pass some useful objects to the user
+        import matplotlib.pyplot as plt
+        import numpy as np
+        usefulObjects = {"sim": sim,
+                         "gui": gui,
+                         "config": config,
+                         "simConfig": sim.config.sim,
+                         "telConfig": sim.config.tel,
+                         "atmosConfig": sim.config.atmos,
+                         "np": np,
+                         "plt": plt}
+>>>>>>> numpy and pyplot in interactive console/gui
 
         for i in range(sim.config.sim.nGS):
             usefulObjects["wfs{}Config".format(i)] = sim.config.wfss[i]
