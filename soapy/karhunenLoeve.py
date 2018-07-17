@@ -61,7 +61,7 @@ def stf_kolmogorov(r):
 def stf_vonKarman_yao(r, L):
     return 6.88 * r**(5. / 3) * (1 - 1.485 * (r / L)**(1 / 3.) +
                                  5.383 * (r / L)**2 -
-                                 6.281 * (r / L)**(7 / 3))
+                                 6.281 * (r / L)**(7 / 3.))
 
 
 def stf_vonKarman(r, L0):
