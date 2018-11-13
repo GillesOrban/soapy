@@ -129,9 +129,9 @@ class Sim(object):
         if configFile:
             self.configFile = configFile
 
+        logger.info("Loading configuration file...")
         self.config = confParse.loadSoapyConfig(self.configFile)
-        logger.statusMessage(
-                1, 1,"Loaded configuration file successfully!" )
+        logger.info("Loading configuration file... success!")
 
     def setLoggingLevel(self, level):
         """
@@ -369,15 +369,13 @@ class Sim(object):
         s = 0
         for nwfs in wfsList:
             #check if due to read out WFS
-            if loopIter:
-                read=False
-                if (int(float(self.config.sim.loopTime*loopIter)
-                        /self.config.wfss[nwfs].exposureTime)
-                                        != self.wfsFrameNo[nwfs]):
-                    self.wfsFrameNo[nwfs]+=1
-                    read=True
+            if (int(float(self.config.sim.loopTime*(loopIter+1))
+                    /self.config.wfss[nwfs].exposureTime)
+                                    != self.wfsFrameNo[nwfs]):
+                self.wfsFrameNo[nwfs]+=1
+                read=True
             else:
-                read = True
+                read=False
 
             slopes[s:s+self.wfss[nwfs].n_measurements] = \
                     self.wfss[nwfs].frame(self.scrns, dmShape, read=read)
@@ -425,7 +423,7 @@ class Sim(object):
             # check if due to read out WFS
             if loopIter:
                 read=False
-                if (int(float(self.config.sim.loopTime*loopIter)
+                if (int(float(self.config.sim.loopTime*(loopIter+1))
                         /self.config.wfss[nwfs].exposureTime)
                                         != self.wfsFrameNo[nwfs]):
                     self.wfsFrameNo[nwfs]+=1
@@ -656,8 +654,14 @@ class Sim(object):
             #Init WFS FP Saving
             if self.config.sim.saveWfsFrames:
                 os.mkdir(self.path+"/wfsFPFrames/")
-
-            shutil.copyfile(self.configFile, self.path+"/conf.py" )
+            
+            # Copy the config file to the save directory so you can 
+            # remember what the parameters where
+            if isinstance(self.config, confParse.YAML_Configurator):
+                fname = "conf.yaml"
+            else:
+                fname = "conf.py"
+            shutil.copyfile(self.configFile, os.path.join(self.path, fname))
 
         # Init Strehl Saving
         if self.config.sim.nSci>0:
@@ -760,12 +764,7 @@ class Sim(object):
                 self.instStrehl[sci,i] = self.sciCams[sci].instStrehl
                 self.longStrehl[sci,i] = self.sciCams[sci].longExpStrehl
 
-                # # Record WFE residual
-                # res = self.sciCams[sci].los.residual
-                # # Remove piston first
-                # res -= res.sum()/self.mask.sum()
-                # res *= self.mask
-                # self.WFE[sci,i] =  numpy.sqrt(numpy.mean(numpy.square(res)))
+                # Record WFE residual
                 self.WFE[sci, i] = self.sciCams[sci].calc_wavefronterror()
 
             if self.config.sim.saveSciRes:
@@ -992,7 +991,7 @@ class Sim(object):
                         sci, self.sciCams[sci].instStrehl,
                         self.sciCams[sci].longExpStrehl)
 
-        logger.statusMessage(iter+1, self.config.sim.nIters, string )
+        logger.statusMessage(iter, self.config.sim.nIters, string )
 
 
     def addToGuiQueue(self):
@@ -1043,7 +1042,7 @@ class Sim(object):
                         instSciImg[i] = None
 
                     try:
-                        residual[i] = self.sciCams[i].los.residual.copy()*self.mask
+                        residual[i] = self.sciCams[i].residual
                     except AttributeError:
                         residual[i] = None
 
