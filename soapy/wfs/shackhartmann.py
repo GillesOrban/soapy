@@ -435,20 +435,23 @@ class ShackHartmann(base.WFS):
             ndarray: array of all WFS measurements
         '''
         numbalib.wfs.chop_subaps(
-                self.detector, self.detector_cent_coords, self.nx_subap_pixels,
-                self.centSubapArrays, threads=self.threads)
+            self.detector, self.detector_cent_coords, self.nx_subap_pixels,
+            self.centSubapArrays, threads=self.threads)
 
         slopes = getattr(centroiders, self.config.centMethod)(
-                self.centSubapArrays,
-                threshold=self.config.centThreshold,
-                ref=self.referenceImage
-                )
+            self.centSubapArrays,
+            threshold=self.config.centThreshold,
+            minThreshold=self.config.centMinThreshold,
+            ref=self.referenceImage
+        )
 
         # If no light in a sub-ap may get NaNs
+        # slopes = numpy.nan_to_num(slopes)
+        slopes[numpy.isnan(slopes)] = self.config.pxlsPerSubap / 2.0 + 0.5
         slopes = numpy.nan_to_num(slopes)
 
         # shift slopes relative to subap centre and remove static offsets
-        slopes -= self.config.pxlsPerSubap/2.0
+        slopes -= (self.config.pxlsPerSubap/2.0 + 0.5)
 
         if numpy.any(self.staticData):
             slopes -= self.staticData

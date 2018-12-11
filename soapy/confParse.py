@@ -720,7 +720,10 @@ class WfsConfig(ConfigObj):
                                 in arc-secs                         ``0``
         ``centThreshold``       float: Centroiding threshold as
                                 a fraction of the max subap
-                                value.\**                           ``0.1``
+                                value.\**                           ``0.0``
+        ``centMinThreshold``    float: minimum absolute threshold
+                                threshold = max(centThreshold,
+                                centMinThreshold)                    ``0``
         ``exposureTime``        float: Exposure time of the WFS
                                 camera - must be higher than
                                 loopTime. If None, will be
@@ -782,23 +785,23 @@ class WfsConfig(ConfigObj):
                         ("nx_guard_pixels", 0),
                         ]
 
-        # Parameters which may be Set at some point and are allowed
+    # Parameters which may be Set at some point and are allowed
     calculatedParams = [
-                        'position',
-                        'pxlsPerSubap2',
-                        'dataStart',
-                        'lgs',
-                        ]
+        'position',
+        'pxlsPerSubap2',
+        'dataStart',
+        'lgs',
+    ]
 
     allowedAttrs = copy.copy(
-            requiredParams + calculatedParams + CONFIG_ATTRIBUTES)
+        requiredParams + calculatedParams + CONFIG_ATTRIBUTES)
     for p in optionalParams:
         allowedAttrs.append(p[0])
 
     def calcParams(self):
         # Set some parameters to correct type
         self.GSPosition = numpy.array(self.GSPosition)
-        self.position = self.GSPosition # For compatability
+        self.position = self.GSPosition  # For compatability
 
         # Ensure wavelength is a float
         self.wavelength = float(self.wavelength)
