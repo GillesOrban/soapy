@@ -343,8 +343,7 @@ class ShackHartmann(base.WFS):
         if detector:
             self.detector[:] = 0
 
-
-    def calcFocalPlane(self, intensity=1):
+    def calcFocalPlane(self, intensity=1, tiptilt=0):
         '''
         Calculates the wfs focal plane, given the phase across the WFS
 
@@ -352,9 +351,10 @@ class ShackHartmann(base.WFS):
             intensity (float): The relative intensity of this frame, is used when multiple WFS frames taken for extended sources.
         '''
 
-        if self.config.propagationMode=="Geometric":
+        if self.config.propagationMode == "Geometric":
             # Have to make phase the correct size if geometric prop
-            numbalib.wfs.zoomtoefield(self.los.phase, self.interp_efield, thread_pool=self.thread_pool)
+            numbalib.wfs.zoomtoefield(self.los.phase + tiptilt,
+                                      self.interp_efield, thread_pool=self.thread_pool)
 
         else:
             self.interp_efield = self.EField
