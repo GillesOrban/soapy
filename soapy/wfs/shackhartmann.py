@@ -199,15 +199,10 @@ class ShackHartmann(base.WFS):
                     (self.n_subaps, self.subapFFTPadding, self.subapFFTPadding), dtype=CDTYPE)
             self.iFFT = pyfftw.FFTW(
                 self.ifft_input_data, self.ifft_output_data, axes=(-2, -1),
-<<<<<<< HEAD
-                threads=self.threads, flags=(self.config.fftwFlag, "FFTW_DESTROY_INPUT")) #,
-                # direction="FFTW_BACKWARD"
-                # )
-=======
                 threads=self.threads, flags=(self.config.fftwFlag, "FFTW_DESTROY_INPUT"),
                 direction="FFTW_BACKWARD"
                 )
->>>>>>> revert to LGS FFTW backward for iFFT
+
 
             self.lgs_ifft_input_data = pyfftw.empty_aligned(
                 (self.subapFFTPadding, self.subapFFTPadding), dtype=CDTYPE)
@@ -215,17 +210,8 @@ class ShackHartmann(base.WFS):
                 (self.subapFFTPadding, self.subapFFTPadding), dtype=CDTYPE)
             self.lgs_iFFT = pyfftw.FFTW(
                 self.lgs_ifft_input_data, self.lgs_ifft_output_data, axes=(0, 1),
-<<<<<<< HEAD
-                threads=self.threads, flags=(self.config.fftwFlag, "FFTW_DESTROY_INPUT")) #,
-                # direction="FFTW_BACKWARD"
-                # )
-=======
                 threads=self.threads, flags=(self.config.fftwFlag, "FFTW_DESTROY_INPUT"),
                 direction="FFTW_BACKWARD"
-<<<<<<< HEAD
-                )
->>>>>>> revert to LGS FFTW backward for iFFT
-=======
             )
 
             self.lgs_fft_input_data = pyfftw.empty_aligned(
@@ -235,7 +221,6 @@ class ShackHartmann(base.WFS):
             self.lgs_FFT = pyfftw.FFTW(
                 self.lgs_fft_input_data, self.lgs_fft_output_data, axes=(0, 1),
                 threads=self.threads, flags=(self.config.fftwFlag, "FFTW_DESTROY_INPUT"))
->>>>>>> modification of the LGS uplink to get a consistent results between physical and geometric propagation
 
     def initLGS(self):
         super(ShackHartmann, self).initLGS()
