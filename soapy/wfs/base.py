@@ -444,9 +444,12 @@ class WFS(object):
         self.zeroData(detector=read, FP=False)
 
         self.los.frame(scrns)
-        if self.config.lgs:
-            if self.lgsConfig.correctLgsTT:
-                self.correctUplinkTilt()
+
+        # if self.config.lgs:
+        #     if self.lgsConfig.correctLgsTT:
+        #          self.correctUplinkTilt()
+        #          # scrns = self.correctUplinkTilt(scrns)
+        #          # phase_correction = self.correctUplinkTilt(phase_correction)
 
         # If LGS elongation simulated
         if self.config.lgs and self.elong!=0:
@@ -459,7 +462,11 @@ class WFS(object):
             if phase_correction is not None:
                 self.los.performCorrection(phase_correction)
 
-            self.calcFocalPlane()
+            tiptilt_correction=0
+            if self.config.lgs:
+                if self.lgsConfig.correctLgsTT:
+                     tiptilt_correction = self.correctUplinkTilt()
+            self.calcFocalPlane(tiptilt = -tiptilt_correction)
 
         self.integrateDetectorPlane()
         if read:
@@ -571,8 +578,13 @@ class WFS(object):
     def correctUplinkTilt(self):
         self._upTTCommand += self.lgsConfig.uplinkgain * self._tiptilt
 
-        self.los.phase -= self._upTTCommand[0] * self.tip1arcsec
-        self.los.phase -= self._upTTCommand[1] * self.tilt1arcsec
+        # self.los.phase -= self._upTTCommand[0] * self.tip1arcsec
+        # self.los.phase -= self._upTTCommand[1] * self.tilt1arcsec
+        # phase_correction -= self._upTTCommand[0] * self.tip1arcsec
+        # phase_correction -= self._upTTCommand[1] * self.tilt1arcsec
+        tiptilt_correction = self._upTTCommand[0] * self.tip1arcsec
+        tiptilt_correction += self._upTTCommand[1] * self.tilt1arcsec
+        return tiptilt_correction
 
     def calculateSlopes(self):
         self.slopes = self.los.EField
