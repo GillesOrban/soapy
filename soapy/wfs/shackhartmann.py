@@ -222,19 +222,31 @@ class ShackHartmann(base.WFS):
 =======
                 threads=self.threads, flags=(self.config.fftwFlag, "FFTW_DESTROY_INPUT"),
                 direction="FFTW_BACKWARD"
+<<<<<<< HEAD
                 )
 >>>>>>> revert to LGS FFTW backward for iFFT
+=======
+            )
+
+            self.lgs_fft_input_data = pyfftw.empty_aligned(
+                (self.subapFFTPadding, self.subapFFTPadding), dtype=CDTYPE)
+            self.lgs_fft_output_data = pyfftw.empty_aligned(
+                (self.subapFFTPadding, self.subapFFTPadding), dtype=CDTYPE)
+            self.lgs_FFT = pyfftw.FFTW(
+                self.lgs_fft_input_data, self.lgs_fft_output_data, axes=(0, 1),
+                threads=self.threads, flags=(self.config.fftwFlag, "FFTW_DESTROY_INPUT"))
+>>>>>>> modification of the LGS uplink to get a consistent results between physical and geometric propagation
 
     def initLGS(self):
         super(ShackHartmann, self).initLGS()
         if self.lgsConfig.uplink:
             lgsObj = getattr(
-                    LGS, "LGS_{}".format(self.lgsConfig.propagationMode))
+                LGS, "LGS_{}".format(self.lgsConfig.propagationMode))
             self.lgs = lgsObj(
-                    self.config, self.soapy_config,
-                    nOutPxls=self.subapFFTPadding,
-                    outPxlScale=float(self.config.subapFOV)/self.subapFFTPadding
-                    )
+                self.config, self.soapy_config,
+                nOutPxls=self.subapFFTPadding,
+                outPxlScale=float(self.config.subapFOV)/self.subapFFTPadding
+            )
 
     def allocDataArrays(self):
         """
@@ -413,19 +425,35 @@ class ShackHartmann(base.WFS):
 
         self.lgs.getLgsPsf(self.los.scrns)
 
-        self.lgs_ifft_input_data[:] = self.lgs.psf  #self.lgs.psf[::-1, ::-1]
-        self.lgs_iFFT()
+        # self.lgs_ifft_input_data[:] = self.lgs.psf #[::-1, ::-1]
+        # self.lgs_iFFT()
+        #
+        # self.ifft_input_data[:] = self.subap_focus_intensity
+        # self.iFFT()
+        #
+        # # Do convolution
+        # self.ifft_output_data *= self.lgs_ifft_output_data
+        #
+        # # back to Focal Plane.
+        # self.fft_input_data[:] = self.ifft_output_data
+        # self.FFT()
+        # # self.subap_focus_intensity[:] = (AOFFT.ftShift2d(self.fft_output_data).real)
+        # self.subap_focus_intensity[:] = (self.fft_output_data).real
 
-        self.ifft_input_data[:] = self.subap_focus_intensity
-        self.iFFT()
+
+        self.lgs_fft_input_data[:] = self.lgs.psf #[::-1, ::-1]
+        self.lgs_FFT()
+
+        self.fft_input_data[:] = self.subap_focus_intensity
+        self.FFT()
 
         # Do convolution
-        self.ifft_output_data *= self.lgs_ifft_output_data
+        self.fft_output_data *= self.lgs_fft_output_data
 
         # back to Focal Plane.
-        self.fft_input_data[:] = self.ifft_output_data
-        self.FFT()
-        self.subap_focus_intensity[:] = AOFFT.ftShift2d(self.fft_output_data).real
+        self.ifft_input_data[:] = self.fft_output_data
+        self.iFFT()
+        self.subap_focus_intensity[:] =  AOFFT.ftShift2d(self.ifft_output_data).real
 
     def calculateSlopes(self):
         '''
