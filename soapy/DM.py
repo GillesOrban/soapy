@@ -472,7 +472,7 @@ class TT(DM):
 
         self.iMatShapes = numpy.array(numpy.meshgrid(coords,coords))
 
-        # Convert to arcsecs
+        # Convert to nm
         tt_amp = -(ASEC2RAD * self.soapy_config.tel.telDiam/2.) * 1e9
 
         self.iMatShapes *= tt_amp
