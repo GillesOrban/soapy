@@ -314,7 +314,7 @@ class LineOfSight(object):
     def performCorrection(self, correction):
         """
         Corrects the aberrated line of sight with some given correction phase
-        
+
         Parameters:
             correction (list or ndarray): either 2-d array describing correction, or list of correction arrays
         """
@@ -359,7 +359,7 @@ class LineOfSight(object):
             self.scrns = scrns
             self.makePhase(self.radii)
 
-        self.residual = self.phase        
+        self.residual = self.phase
         if correction is not None:
             self.performCorrection(correction)
 
@@ -424,8 +424,9 @@ def physical_atmosphere_propagation(
         phase *= phs2Rad
 
         # Change sign if propagating up
-        if propagation_direction == 'up':
-            phase *= -1
+        # if propagation_direction == 'up':
+        #     phase *= -1
+
         # print("Get distance")
         # Get propagation distance for this layer
         if i==(scrnNo-1):
