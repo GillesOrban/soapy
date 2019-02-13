@@ -408,14 +408,18 @@ class Reconstructor(object):
             # If loop is closed, only add residual measurements onto old
             # actuator values
             if dm.dmConfig.closed:
-                self.actuator_values[n_act1: n_act2] += (dm.dmConfig.gain * self.new_actuator_values[n_act1: n_act2])
+                # self.actuator_values[n_act1: n_act2] += (dm.dmConfig.gain *
+                #                                          self.new_actuator_values[n_act1: n_act2])
+                # GOX -- implementing a leaky gain
+                self.actuator_values[n_act1: n_act2] = dm.dmConfig.leakyGain * \
+                    self.actuator_values[n_act1: n_act2] + \
+                    (dm.dmConfig.gain * self.new_actuator_values[n_act1: n_act2])
 
             else:
                 self.actuator_values[n_act1: n_act2] = ((dm.dmConfig.gain * self.new_actuator_values[n_act1: n_act2])
-                                + ( (1. - dm.dmConfig.gain) * self.actuator_values[n_act1: n_act2]) )
+                                                        + ((1. - dm.dmConfig.gain) * self.actuator_values[n_act1: n_act2]))
 
             n_act1 += dm.n_valid_actuators
-
 
     def reconstruct(self, wfs_measurements):
         t = time.time()
