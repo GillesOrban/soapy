@@ -294,8 +294,13 @@ class KarhunenLoeve(DM):
             nr = 72
         elif self.nacts > 1000:
             nr = 128
-        shapes, _, _, _ = KL.make_kl(int(self.n_acts), int(self.nx_dm_elements),
-                                     ri=cobs, nr=nr, mask=True)
+        shapes, _, pup, _ = KL.make_kl(int(self.n_acts), int(self.nx_dm_elements),
+                                       ri=cobs, nr=nr, mask=True)
+
+        # Remove Piston value -- @ GOX 12/02/2019
+        for i in range(int(self.n_acts)):
+            shapes[i, :, :] = shapes[i, :, :] - numpy.mean(shapes[i][pup == 1])
+
         pad = self.simConfig.simPad
         self.iMatShapes = numpy.pad(
             shapes, ((0, 0), (pad, pad), (pad, pad)), mode="constant"
