@@ -970,6 +970,9 @@ class DmConfig(ConfigObj):
                              use this string to define the path
                              to the fits file defining the DM
                              shapes.
+        ``leaky gain``       leak coefficient of previous command. ``1``
+                             if =1, pure integral controller
+                             if <1 "leaky" integral controller
         ==================== =================================   ===========
     """
 
@@ -989,7 +992,8 @@ class DmConfig(ConfigObj):
         ("altitude", 0.),
         ("diameter", None),
         ("gauss_width", 0.7),
-        ("dmShapesFilename", None)
+        ("dmShapesFilename", None),
+        ("leakyGain", 1)
     ]
 
     calculatedParams = [
