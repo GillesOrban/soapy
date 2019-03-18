@@ -292,7 +292,7 @@ class KarhunenLoeve(DM):
             nr = 64
         elif self.n_acts <= 1000:
             nr = 72
-        elif self.nacts > 1000:
+        elif self.n_acts > 1000:
             nr = 128
         shapes, _, pup, _ = KL.make_kl(int(self.n_acts), int(self.nx_dm_elements),
                                        ri=cobs, nr=nr, mask=True)
