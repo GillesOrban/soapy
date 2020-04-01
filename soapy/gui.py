@@ -290,9 +290,10 @@ class GUI(QtWidgets.QMainWindow):
 
             self.gainSpins.append(QtGui.QDoubleSpinBox())
             self.ui.gainLayout.addWidget(self.gainSpins[dm])
+            self.gainSpins[dm].setMinimum(-1.)
+            self.gainSpins[dm].setMaximum(1.)
             self.gainSpins[dm].setValue(self.config.dms[dm].gain)
             self.gainSpins[dm].setSingleStep(0.05)
-            self.gainSpins[dm].setMaximum(1.)
 
             self.gainSpins[dm].valueChanged.connect(
                                                 partial(self.gainChanged,dm))
