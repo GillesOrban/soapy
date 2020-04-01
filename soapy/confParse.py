@@ -973,9 +973,6 @@ class DmConfig(ConfigObj):
         ``diameter``         float: Diameter covered by DM in
                              metres. If ``None`` if telescope
                              diameter.                           ``None``
-        ``gauss_width``      float: Width of gaussian influence
-                             functions in units of actuator
-                              spacing.                           ``1``
         ``dmShapesFilename`` str: if dm type is 'CustomShapes',
                              use this string to define the path
                              to the fits file defining the DM
@@ -1001,7 +998,6 @@ class DmConfig(ConfigObj):
         ("gaussWidth", 0.5),
         ("altitude", 0.),
         ("diameter", None),
-        ("gauss_width", 0.7),
         ("dmShapesFilename", None),
         ("leakyGain", 1)
     ]
