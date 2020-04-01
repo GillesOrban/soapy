@@ -174,6 +174,21 @@ class Sim(object):
         logger.info("Creating mask...")
         self.mask = make_mask(self.config)
 
+        # GOX -- 20-03-2020 -- different  mask for SH array
+        factor_diam = 1 #14/15
+        factor_cobs = 1
+        if self.config.tel.mask == "circle":
+            mask = aotools.circle(factor_diam * self.config.sim.pupilSize / 2.,
+                                      self.config.sim.simSize)
+            if self.config.tel.obsDiam != None:
+                mask -= aotools.circle(
+                    factor_cobs * self.config.tel.obsDiam * self.config.sim.pxlScale / 2.,
+                    self.config.sim.simSize)
+            self.mask_WFS = mask
+        else:
+            self.mask_WFS = mask
+        #-------------
+
         self.atmos = atmosphere.atmos(self.config)
 
         # Find if WFSs should each have own process
@@ -199,7 +214,7 @@ class Sim(object):
                                 self.config.wfss[nwfs].type))
 
             self.wfss[nwfs] = wfsClass(
-                    self.config, n_wfs=nwfs, mask=self.mask)
+                    self.config, n_wfs=nwfs, mask=self.mask_WFS)
 
             self.config.wfss[nwfs].dataStart = self.config.sim.totalWfsData
             self.config.sim.totalWfsData += self.wfss[nwfs].n_measurements
