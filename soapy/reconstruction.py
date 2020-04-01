@@ -311,7 +311,11 @@ class Reconstructor(object):
         # If an act has a <0.1% effect then it will be removed
         # NOTE: THIS SHOULD REALLY BE DONE ON A PER WFS BASIS
         valid_actuators = numpy.zeros((dm.n_acts), dtype="int")
-        act_threshold = abs(iMat).max() * 0.001
+        # GOX (20-03-2020): NOTE - settting this threshold to 0's
+        #   because in the case of Piezo or GaussStack, actuators are on a square grid
+        #   so does not make much sense wrt the pupil + lead to bugs when doing the iMat
+        # act_threshold = abs(iMat).max() * 0.001
+        act_threshold = 0 
         for i in range(dm.n_acts):
             if abs(iMat[i]).max() > act_threshold:
                 valid_actuators[i] = 1
